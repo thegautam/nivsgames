@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Jeopardy</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 3em;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
+            margin-bottom: 10px;
+        }
+
+        .score {
+            font-size: 1.5em;
+            color: #ffd700;
+        }
+
+        .input-container {
+            margin: 20px 0;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2em;
+            border: 3px solid #ffd700;
+            background: #1e3799;
+            color: white;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            background: #2c3e50;
+        }
+
+        .feedback {
+            display: none;
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .feedback.correct {
+            background: rgba(76, 209, 55, 0.2);
+            border: 2px solid #4cd137;
+            color: #4cd137;
+        }
+
+        .feedback.incorrect {
+            background: rgba(231, 76, 60, 0.2);
+            border: 2px solid #e74c3c;
+            color: #e74c3c;
+        }
+
+        .game-board {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+        }
+
+        .category {
+            background: #0c2461;
+            padding: 15px 10px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.95em;
+            border: 3px solid #ffd700;
+            text-transform: uppercase;
+        }
+
+        .question-card {
+            background: #0c2461;
+            padding: 40px 20px;
+            text-align: center;
+            font-size: 2em;
+            font-weight: bold;
+            color: #ffd700;
+            border: 3px solid #ffd700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .question-card:hover:not(.used) {
+            background: #1e3799;
+            transform: scale(1.05);
+        }
+
+        .question-card.used {
+            background: #2c3e50;
+            color: #555;
+            cursor: not-allowed;
+            border-color: #555;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #0c2461;
+            padding: 40px;
+            border: 5px solid #ffd700;
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .question-text {
+            font-size: 1.5em;
+            margin-bottom: 30px;
+            line-height: 1.4;
+        }
+
+        .answer {
+            display: none;
+            font-size: 1.3em;
+            color: #4cd137;
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(76, 209, 55, 0.1);
+            border: 2px solid #4cd137;
+            border-radius: 5px;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .show-answer {
+            background: #ffd700;
+            color: #0c2461;
+        }
+
+        .show-answer:hover {
+            background: #ffed4e;
+        }
+
+        .correct {
+            background: #4cd137;
+            color: white;
+        }
+
+        .correct:hover {
+            background: #44bd32;
+        }
+
+        .incorrect {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .incorrect:hover {
+            background: #c0392b;
+        }
+
+        .close {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .close:hover {
+            background: #7f8c8d;
+        }
+
+        .scoreboard {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .player-score {
+            padding: 15px 25px;
+            background: #0c2461;
+            border: 3px solid #7f8c8d;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+        .player-score.active {
+            border-color: #ffd700;
+            background: #1e3799;
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        .player-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .player-points {
+            font-size: 1.5em;
+            color: #ffd700;
+        }
+
+        .current-turn {
+            text-align: center;
+            font-size: 1.3em;
+            color: #ffd700;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+
+        .setup-modal .modal-content {
+            max-width: 500px;
+        }
+
+        .setup-input {
+            margin: 20px 0;
+        }
+
+        .setup-input label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .setup-input select {
+            width: 100%;
+            padding: 10px;
+            font-size: 1.1em;
+            background: #1e3799;
+            color: white;
+            border: 3px solid #ffd700;
+            border-radius: 5px;
+        }
+
+        .setup-input input[type="text"] {
+            margin-bottom: 10px;
+        }
+
+        .player-inputs {
+            margin: 20px 0;
+        }
+
+        .start-game {
+            background: #4cd137;
+            color: white;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        .start-game:hover {
+            background: #44bd32;
+        }
+
+        .winner-modal .modal-content {
+            max-width: 700px;
+        }
+
+        .winner-title {
+            font-size: 2.5em;
+            color: #ffd700;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .final-scores {
+            margin: 20px 0;
+        }
+
+        .final-score-item {
+            padding: 15px;
+            margin: 10px 0;
+            background: #1e3799;
+            border: 2px solid #ffd700;
+            border-radius: 5px;
+            font-size: 1.3em;
+        }
+
+        .final-score-item.winner {
+            background: #ffd700;
+            color: #0c2461;
+            border-width: 4px;
+            font-size: 1.5em;
+        }
+
+        .play-again {
+            background: #4cd137;
+            color: white;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        .play-again:hover {
+            background: #44bd32;
+        }
+
+        .modal-header {
+            font-size: 1.1em;
+            color: #ffd700;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>MATH JEOPARDY</h1>
+        <div class="current-turn" id="currentTurn"></div>
+        <div class="scoreboard" id="scoreboard"></div>
+    </div>
+
+    <div class="game-board" id="gameBoard"></div>
+
+    <div class="modal setup-modal" id="setupModal">
+        <div class="modal-content">
+            <h2>Setup Game</h2>
+            <div class="setup-input">
+                <label for="playerCount">Number of Players (2-5):</label>
+                <select id="playerCount">
+                    <option value="2">2 Players</option>
+                    <option value="3">3 Players</option>
+                    <option value="4">4 Players</option>
+                    <option value="5">5 Players</option>
+                </select>
+            </div>
+            <div class="player-inputs" id="playerInputs"></div>
+            <button class="start-game" id="startGameBtn">Start Game</button>
+        </div>
+    </div>
+
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-header" id="modalHeader"></div>
+            <div class="question-text" id="questionText"></div>
+            <div class="input-container">
+                <input type="text" id="answerInput" placeholder="Type your answer here..." autocomplete="off">
+            </div>
+            <div class="feedback" id="feedback"></div>
+            <div class="buttons">
+                <button class="show-answer" id="submitBtn">Submit</button>
+                <button class="close" id="closeBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal winner-modal" id="winnerModal">
+        <div class="modal-content">
+            <div class="winner-title">🎉 Game Over! 🎉</div>
+            <div class="final-scores" id="finalScores"></div>
+            <button class="play-again" id="playAgainBtn">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        const categories = [
+            { name: "Multiplication", color: "#e74c3c" },
+            { name: "Division", color: "#3498db" },
+            { name: "Derivatives", color: "#2ecc71" },
+            { name: "Roots & Exponents", color: "#f39c12" },
+            { name: "Logarithms", color: "#9b59b6" },
+            { name: "Word Problems", color: "#e67e22" }
+        ];
+
+        const questions = {
+            "Multiplication": {
+                1: { q: "34 × 12 = ?", a: "408" },
+                2: { q: "57 × 23 = ?", a: "1311" },
+                3: { q: "125 × 16 = ?", a: "2000" },
+                4: { q: "234 × 45 = ?", a: "10530" },
+                5: { q: "167 × 89 = ?", a: "14863" }
+            },
+            "Division": {
+                1: { q: "144 ÷ 12 = ?", a: "12" },
+                2: { q: "325 ÷ 13 = ?", a: "25" },
+                3: { q: "756 ÷ 18 = ?", a: "42" },
+                4: { q: "1224 ÷ 24 = ?", a: "51" },
+                5: { q: "2475 ÷ 45 = ?", a: "55" }
+            },
+            "Derivatives": {
+                1: { q: "d/dx(x²) = ?", a: "2x|2*x" },
+                2: { q: "d/dx(3x) = ?", a: "3" },
+                3: { q: "d/dx(x³) = ?", a: "3x²|3x^2|3*x²|3*x^2" },
+                4: { q: "d/dx(5x² + 2x) = ?", a: "10x+2|10x+2|10*x+2" },
+                5: { q: "d/dx(x⁴ - 3x²) = ?", a: "4x³-6x|4x^3-6x|4*x³-6x|4*x^3-6x" }
+            },
+            "Roots & Exponents": {
+                1: { q: "√64 = ?", a: "8" },
+                2: { q: "5³ = ?", a: "125" },
+                3: { q: "√196 = ?", a: "14" },
+                4: { q: "2⁷ = ?", a: "128" },
+                5: { q: "∛125 = ?", a: "5" }
+            },
+            "Logarithms": {
+                1: { q: "log₁₀(100) = ?", a: "2" },
+                2: { q: "log₂(8) = ?", a: "3" },
+                3: { q: "log₁₀(1000) = ?", a: "3" },
+                4: { q: "log₂(16) = ?", a: "4" },
+                5: { q: "ln(e²) = ?", a: "2" }
+            },
+            "Word Problems": {
+                1: { q: "If you have 5 apples and buy 3 more, how many do you have?", a: "8|8apples" },
+                2: { q: "A car travels 65 mph for 2 hours. How far does it travel in miles?", a: "130|130miles" },
+                3: { q: "If 5 pencils cost $2.50, how much does 1 pencil cost in dollars?", a: "0.50|0.5|.5|.50" },
+                4: { q: "A rectangle has length 15 and width 8. What is its area?", a: "120" },
+                5: { q: "A tank holds 240 gallons. If it drains at 8 gallons/min, how many minutes to empty?", a: "30|30minutes" }
+            }
+        };
+
+        let players = [];
+        let currentPlayerIndex = 0;
+        let totalQuestionsUsed = 0;
+        let currentQuestion = null;
+
+        function showSetupModal() {
+            document.getElementById('setupModal').style.display = 'block';
+            updatePlayerInputs();
+        }
+
+        function updatePlayerInputs() {
+            const count = parseInt(document.getElementById('playerCount').value);
+            const container = document.getElementById('playerInputs');
+            container.innerHTML = '';
+
+            for (let i = 1; i <= count; i++) {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.placeholder = `Player ${i} Name`;
+                input.id = `player${i}Name`;
+                input.value = `Player ${i}`;
+                container.appendChild(input);
+            }
+        }
+
+        function startGame() {
+            const count = parseInt(document.getElementById('playerCount').value);
+            players = [];
+
+            for (let i = 1; i <= count; i++) {
+                const name = document.getElementById(`player${i}Name`).value.trim() || `Player ${i}`;
+                players.push({ name: name, score: 0 });
+            }
+
+            document.getElementById('setupModal').style.display = 'none';
+            initializeBoard();
+            updateScoreboard();
+            updateCurrentTurn();
+        }
+
+        function updateScoreboard() {
+            const scoreboard = document.getElementById('scoreboard');
+            scoreboard.innerHTML = '';
+
+            players.forEach((player, index) => {
+                const playerDiv = document.createElement('div');
+                playerDiv.className = 'player-score';
+                if (index === currentPlayerIndex) {
+                    playerDiv.classList.add('active');
+                }
+
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'player-name';
+                nameDiv.textContent = player.name;
+
+                const pointsDiv = document.createElement('div');
+                pointsDiv.className = 'player-points';
+                pointsDiv.textContent = `${player.score} pts`;
+
+                playerDiv.appendChild(nameDiv);
+                playerDiv.appendChild(pointsDiv);
+                scoreboard.appendChild(playerDiv);
+            });
+        }
+
+        function updateCurrentTurn() {
+            const currentTurnDiv = document.getElementById('currentTurn');
+            currentTurnDiv.textContent = `${players[currentPlayerIndex].name}'s Turn`;
+        }
+
+        function nextTurn() {
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            updateScoreboard();
+            updateCurrentTurn();
+        }
+
+        function initializeBoard() {
+            const board = document.getElementById('gameBoard');
+            board.innerHTML = '';
+
+            categories.forEach(cat => {
+                const catDiv = document.createElement('div');
+                catDiv.className = 'category';
+                catDiv.textContent = cat.name;
+                board.appendChild(catDiv);
+            });
+
+            const values = [1, 2, 3, 4, 5];
+            values.forEach(value => {
+                categories.forEach(cat => {
+                    const card = document.createElement('div');
+                    card.className = 'question-card';
+                    card.textContent = value;
+                    card.dataset.category = cat.name;
+                    card.dataset.value = value;
+                    card.addEventListener('click', () => showQuestion(cat.name, value, card));
+                    board.appendChild(card);
+                });
+            });
+        }
+
+        function showQuestion(category, value, card) {
+            if (card.classList.contains('used')) return;
+
+            currentQuestion = {
+                category: category,
+                value: value,
+                card: card,
+                answer: questions[category][value].a
+            };
+
+            const q = questions[category][value];
+            document.getElementById('modalHeader').textContent = `${players[currentPlayerIndex].name} - ${value * 100} points`;
+            document.getElementById('questionText').textContent = q.q;
+            document.getElementById('answerInput').value = '';
+            document.getElementById('feedback').style.display = 'none';
+            document.getElementById('feedback').className = 'feedback';
+            document.getElementById('modal').style.display = 'block';
+            document.getElementById('answerInput').focus();
+        }
+
+        function normalizeAnswer(answer) {
+            return answer.toLowerCase().trim()
+                .replace(/\s+/g, '')
+                .replace(/\$/g, '')
+                .replace(/,/g, '');
+        }
+
+        function checkAnswer() {
+            const userAnswer = document.getElementById('answerInput').value;
+            const correctAnswer = currentQuestion.answer;
+            const feedback = document.getElementById('feedback');
+
+            if (!userAnswer.trim()) {
+                return;
+            }
+
+            const normalized = normalizeAnswer(userAnswer);
+            const correctNormalized = normalizeAnswer(correctAnswer);
+            const correctAlternatives = correctNormalized.split('|').map(a => a.trim());
+
+            const isCorrect = correctAlternatives.some(alt => normalized === alt);
+            const points = currentQuestion.value * 100;
+
+            if (isCorrect) {
+                feedback.textContent = `Correct! +${points} points`;
+                feedback.className = 'feedback correct';
+                feedback.style.display = 'block';
+                players[currentPlayerIndex].score += points;
+            } else {
+                feedback.textContent = `Incorrect! -${points} points. The correct answer is ${correctAnswer.split('|')[0]}`;
+                feedback.className = 'feedback incorrect';
+                feedback.style.display = 'block';
+                players[currentPlayerIndex].score -= points;
+            }
+
+            currentQuestion.card.classList.add('used');
+            totalQuestionsUsed++;
+            updateScoreboard();
+
+            setTimeout(() => {
+                document.getElementById('modal').style.display = 'none';
+                nextTurn();
+                checkGameEnd();
+            }, 2500);
+        }
+
+        function checkGameEnd() {
+            if (totalQuestionsUsed >= 30) {
+                showWinner();
+            }
+        }
+
+        function showWinner() {
+            const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+            const finalScoresDiv = document.getElementById('finalScores');
+            finalScoresDiv.innerHTML = '';
+
+            sortedPlayers.forEach((player, index) => {
+                const scoreItem = document.createElement('div');
+                scoreItem.className = 'final-score-item';
+
+                if (index === 0) {
+                    scoreItem.classList.add('winner');
+                    scoreItem.textContent = `🏆 ${player.name}: ${player.score} points - WINNER! 🏆`;
+                } else {
+                    scoreItem.textContent = `${player.name}: ${player.score} points`;
+                }
+
+                finalScoresDiv.appendChild(scoreItem);
+            });
+
+            document.getElementById('winnerModal').style.display = 'block';
+        }
+
+        document.getElementById('playerCount').addEventListener('change', updatePlayerInputs);
+        document.getElementById('startGameBtn').addEventListener('click', startGame);
+
+        document.getElementById('submitBtn').addEventListener('click', checkAnswer);
+
+        document.getElementById('answerInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                checkAnswer();
+            }
+        });
+
+        document.getElementById('closeBtn').addEventListener('click', () => {
+            if (currentQuestion && !currentQuestion.card.classList.contains('used')) {
+                currentQuestion.card.classList.add('used');
+                totalQuestionsUsed++;
+                nextTurn();
+                checkGameEnd();
+            }
+            document.getElementById('modal').style.display = 'none';
+        });
+
+        document.getElementById('playAgainBtn').addEventListener('click', () => {
+            location.reload();
+        });
+
+        showSetupModal();
+    </script>
+</body>
+</html>

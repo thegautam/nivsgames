@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Games</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        h1 {
+            text-align: center;
+            font-size: 3em;
+            margin-bottom: 40px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .game-list {
+            list-style: none;
+            padding: 0;
+        }
+        .game-item {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .game-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            flex: 1;
+        }
+        .game-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+        .btn-play {
+            background: #4CAF50;
+            color: white;
+        }
+        .btn-play:hover {
+            background: #45a049;
+        }
+        .btn-rename {
+            background: #2196F3;
+            color: white;
+        }
+        .btn-rename:hover {
+            background: #0b7dda;
+        }
+        .btn-duplicate {
+            background: #FF9800;
+            color: white;
+        }
+        .btn-duplicate:hover {
+            background: #e68900;
+        }
+        .btn-delete {
+            background: #f44336;
+            color: white;
+        }
+        .btn-delete:hover {
+            background: #da190b;
+        }
+        .tags-container {
+            margin-top: 10px;
+        }
+        .tag {
+            display: inline-block;
+            background: rgba(255,255,255,0.3);
+            padding: 5px 10px;
+            border-radius: 15px;
+            margin: 3px;
+            font-size: 0.85em;
+        }
+        .tag .remove-tag {
+            margin-left: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .tag .remove-tag:hover {
+            color: #f44336;
+        }
+        .add-tag-input {
+            display: inline-block;
+            margin-top: 5px;
+        }
+        .add-tag-input input {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 15px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            outline: none;
+        }
+        .add-tag-input input::placeholder {
+            color: rgba(255,255,255,0.6);
+        }
+        .add-tag-input button {
+            padding: 5px 12px;
+            margin-left: 5px;
+            border: none;
+            border-radius: 15px;
+            background: rgba(255,255,255,0.3);
+            color: white;
+            cursor: pointer;
+        }
+        .add-tag-input button:hover {
+            background: rgba(255,255,255,0.4);
+        }
+    </style>
+</head>
+<body>
+    <h1>🎮 My Games</h1>
+    <ul class="game-list" id="gameList"></ul>
+
+    <script>
+        // Initialize games data
+        let games = JSON.parse(localStorage.getItem('games')) || [
+            { id: 1, name: 'Sushi Game', url: 'games/sushi-games/sushi-game.html', tags: [] },
+            { id: 2, name: 'Sushi Math', url: 'games/sushi-games/sushi-math.html', tags: [] },
+            { id: 3, name: 'Tower Defense', url: 'games/strategy-games/tower-defense.html', tags: [] },
+            { id: 4, name: 'Space Fighter', url: 'games/space-fighter/space-fighter.html', tags: ['3D', 'exploration'] }
+        ];
+
+        function saveGames() {
+            localStorage.setItem('games', JSON.stringify(games));
+        }
+
+        function renderGames() {
+            const gameList = document.getElementById('gameList');
+            gameList.innerHTML = '';
+
+            games.forEach(game => {
+                const li = document.createElement('li');
+                li.className = 'game-item';
+
+                li.innerHTML = `
+                    <div class="game-header">
+                        <div class="game-title">${game.name}</div>
+                        <div class="game-actions">
+                            <button class="btn btn-play" onclick="playGame('${game.url}')">Play</button>
+                            <button class="btn btn-rename" onclick="renameGame(${game.id})">Rename</button>
+                            <button class="btn btn-duplicate" onclick="duplicateGame(${game.id})">Duplicate</button>
+                            <button class="btn btn-delete" onclick="deleteGame(${game.id})">Delete</button>
+                        </div>
+                    </div>
+                    <div class="tags-container">
+                        <div id="tags-${game.id}">
+                            ${game.tags.map(tag => `
+                                <span class="tag">
+                                    ${tag}
+                                    <span class="remove-tag" onclick="removeTag(${game.id}, '${tag}')">×</span>
+                                </span>
+                            `).join('')}
+                        </div>
+                        <div class="add-tag-input">
+                            <input type="text" id="tag-input-${game.id}" placeholder="Add tag..." onkeypress="handleTagEnter(event, ${game.id})">
+                            <button onclick="addTag(${game.id})">Add</button>
+                        </div>
+                    </div>
+                `;
+
+                gameList.appendChild(li);
+            });
+        }
+
+        function playGame(url) {
+            window.location.href = url;
+        }
+
+        function renameGame(id) {
+            const game = games.find(g => g.id === id);
+            const newName = prompt('Enter new name:', game.name);
+            if (newName && newName.trim()) {
+                game.name = newName.trim();
+                saveGames();
+                renderGames();
+            }
+        }
+
+        async function duplicateGame(id) {
+            const game = games.find(g => g.id === id);
+
+            try {
+                const response = await fetch('http://localhost:3000/api/duplicate-game', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        originalUrl: game.url,
+                        newName: game.name + ' (Copy)'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    const newGame = {
+                        id: Math.max(...games.map(g => g.id)) + 1,
+                        name: game.name + ' (Copy)',
+                        url: result.newUrl,
+                        tags: [...game.tags]
+                    };
+                    games.push(newGame);
+                    saveGames();
+                    renderGames();
+                    alert('Game duplicated successfully!');
+                } else {
+                    alert('Failed to duplicate game: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error: Make sure the server is running (npm start)');
+                console.error('Duplicate error:', error);
+            }
+        }
+
+        async function deleteGame(id) {
+            if (!confirm('Are you sure you want to delete this game? This will delete the actual file!')) {
+                return;
+            }
+
+            const game = games.find(g => g.id === id);
+
+            try {
+                const response = await fetch('http://localhost:3000/api/delete-game', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        url: game.url
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    games = games.filter(g => g.id !== id);
+                    saveGames();
+                    renderGames();
+                    alert('Game deleted successfully!');
+                } else {
+                    alert('Failed to delete game: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error: Make sure the server is running (npm start)');
+                console.error('Delete error:', error);
+            }
+        }
+
+        function addTag(id) {
+            const input = document.getElementById(`tag-input-${id}`);
+            const tag = input.value.trim();
+            if (tag) {
+                const game = games.find(g => g.id === id);
+                if (!game.tags.includes(tag)) {
+                    game.tags.push(tag);
+                    saveGames();
+                    renderGames();
+                }
+                input.value = '';
+            }
+        }
+
+        function removeTag(id, tag) {
+            const game = games.find(g => g.id === id);
+            game.tags = game.tags.filter(t => t !== tag);
+            saveGames();
+            renderGames();
+        }
+
+        function handleTagEnter(event, id) {
+            if (event.key === 'Enter') {
+                addTag(id);
+            }
+        }
+
+        // Initial render
+        renderGames();
+    </script>
+</body>
+</html>
