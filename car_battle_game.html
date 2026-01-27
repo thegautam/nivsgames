@@ -26,13 +26,13 @@
         #startMenu {
             text-align: center;
             background: rgba(0,0,0,0.7);
-            padding: 50px;
+            padding: 60px 80px;
             border-radius: 20px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
         #startMenu h1 {
             font-size: 48px;
-            margin-bottom: 20px;
+            margin-bottom: 40px;
             text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
         }
         #startMenu p {
@@ -41,8 +41,8 @@
         }
         #storySelect {
             font-size: 24px;
-            padding: 10px 20px;
-            margin: 20px;
+            padding: 12px 24px;
+            margin: 10px 0;
             border-radius: 10px;
             border: none;
             background: #667eea;
@@ -51,7 +51,8 @@
         }
         #startButton {
             font-size: 28px;
-            padding: 15px 50px;
+            padding: 18px 60px;
+            margin-top: 10px;
             border-radius: 15px;
             border: none;
             background: #00ff88;
@@ -82,9 +83,9 @@
 <body>
     <div id="startMenu">
         <h1>🏎️ STUNT CAR BATTLE ROYALE 🏎️</h1>
-        <p>Choose your arena size!</p>
+        <p style="margin-bottom: 30px;">Choose your arena size!</p>
         <label for="storySelect" style="font-size: 20px;">Number of Stories (Levels):</label><br>
-        <select id="storySelect">
+        <select id="storySelect" style="margin-top: 10px;">
             <option value="3">3 Stories (3 Bots)</option>
             <option value="4">4 Stories (4 Bots)</option>
             <option value="5" selected>5 Stories (5 Bots)</option>
@@ -93,7 +94,11 @@
             <option value="8">8 Stories (8 Bots)</option>
             <option value="9">9 Stories (9 Bots)</option>
             <option value="10">10 Stories (10 Bots) - INSANE!</option>
-        </select><br>
+        </select>
+        <div style="margin-top: 30px; margin-bottom: 30px;">
+            <input type="checkbox" id="challengeCheck" style="width: 20px; height: 20px; cursor: pointer;">
+            <label for="challengeCheck" style="font-size: 20px; cursor: pointer;"> Challenge Mode (All Bots vs YOU!)</label>
+        </div>
         <button id="startButton">START BATTLE!</button>
     </div>
 
@@ -103,7 +108,7 @@
         <div id="status">BATTLE ROYALE - Last Car Standing Wins!</div>
         <div class="controls">
             Arrow Keys: Move | Arrow Up: Jump | Space: Brake | Press R to restart<br>
-            ⚠️ WARNING: 5 seconds idle = ELIMINATION!
+            ⚠️ WARNING: 4 seconds idle = ELIMINATION!
         </div>
     </div>
 
@@ -115,11 +120,13 @@
         const infoDiv = document.getElementById('info');
         const storySelect = document.getElementById('storySelect');
         const startButton = document.getElementById('startButton');
+        const challengeCheck = document.getElementById('challengeCheck');
 
         let gameOver = false;
         let gameStarted = false;
         let numStories = 5;
         let numBots = 5;
+        let challengeMode = false;
         const GRAVITY = 0.6;
         const STORY_HEIGHT = 150;
         const GROUND_Y = 850;
@@ -131,7 +138,7 @@
         let gameTimer = 0;
         let hunterBot = null;
         let lastKeyPressTime = 0;
-        const IDLE_TIMEOUT = 300; // 5 seconds at 60fps
+        const IDLE_TIMEOUT = 240; // 4 seconds at 60fps
         let cameraX = 0;
         let cameraY = 0;
         let cameraShakeX = 0;
@@ -182,6 +189,7 @@
         startButton.addEventListener('click', () => {
             numStories = parseInt(storySelect.value);
             numBots = numStories;
+            challengeMode = challengeCheck.checked;
             startGame();
         });
 
@@ -253,9 +261,7 @@
             // Generate jump pads
             for (let story = 0; story <= numStories; story++) {
                 const y = GROUND_Y - story * STORY_HEIGHT - 5;
-                const numJumps = 1 + Math.floor(Math.random() * 2);
-
-                for (let i = 0; i < numJumps; i++) {
+                if (Math.random() < 0.4) {
                     const x = 200 + Math.random() * (canvas.width - 400);
                     track.jumpPads.push({
                         x: x,
@@ -269,7 +275,7 @@
             }
 
             // Generate teleporters (pairs)
-            for (let i = 0; i < Math.min(3, Math.floor(numStories / 2)); i++) {
+            for (let i = 0; i < Math.min(1, Math.floor(numStories / 3)); i++) {
                 const story1 = Math.floor(Math.random() * numStories);
                 const story2 = Math.floor(Math.random() * numStories);
                 const x1 = 100 + Math.random() * (canvas.width - 300);
@@ -317,7 +323,7 @@
             // Generate ice patches
             for (let story = 0; story <= numStories; story++) {
                 const y = GROUND_Y - story * STORY_HEIGHT - 5;
-                if (Math.random() < 0.5) {
+                if (Math.random() < 0.25) {
                     track.icePatches.push({
                         x: 150 + Math.random() * (canvas.width - 400),
                         y: y,
@@ -330,7 +336,7 @@
             // Generate wind fans
             for (let story = 0; story <= numStories; story++) {
                 const y = GROUND_Y - story * STORY_HEIGHT - 40;
-                if (Math.random() < 0.4) {
+                if (Math.random() < 0.2) {
                     track.fans.push({
                         x: 100 + Math.random() * (canvas.width - 300),
                         y: y,
@@ -346,7 +352,7 @@
             // Generate spikes - reduced frequency
             for (let story = 0; story <= numStories; story++) {
                 const y = GROUND_Y - story * STORY_HEIGHT;
-                if (Math.random() < 0.2) {
+                if (Math.random() < 0.1) {
                     track.spikes.push({
                         x: 150 + Math.random() * (canvas.width - 400),
                         y: y - 40,
@@ -374,7 +380,7 @@
             // Generate bumpers - reduced frequency
             for (let story = 0; story <= numStories; story++) {
                 const y = GROUND_Y - story * STORY_HEIGHT - 40;
-                if (Math.random() < 0.3) {
+                if (Math.random() < 0.15) {
                     track.obstacles.push({
                         x: 150 + Math.random() * (canvas.width - 400),
                         y: y,
@@ -388,7 +394,7 @@
             // Generate walls
             for (let story = 0; story <= numStories; story++) {
                 const y = GROUND_Y - story * STORY_HEIGHT - 50;
-                if (Math.random() < 0.5) {
+                if (Math.random() < 0.2) {
                     track.obstacles.push({
                         x: 200 + Math.random() * (canvas.width - 500),
                         y: y,
@@ -447,7 +453,8 @@
                     alive: true,
                     id: `ai${i}`,
                     teleportCooldown: 0,
-                    isHunter: false
+                    isHunter: false,
+                    lastHitByPlayer: 0
                 });
             }
         }
@@ -1158,6 +1165,12 @@
         }
 
         function findNearestTarget(car, allCars) {
+            // In challenge mode, always target the player
+            if (challengeMode) {
+                if (player.alive) return player;
+                return null;
+            }
+
             // 70% chance to target the player, 30% chance to target other bots
             if (Math.random() < 0.7) {
                 // Target the player
@@ -1316,6 +1329,19 @@
             }
 
             if (car.y > canvas.height + 50 || car.y < -100) {
+                // In challenge mode, bots can only die if player hit them recently
+                if (challengeMode && !isPlayer && car.lastHitByPlayer !== undefined) {
+                    const timeSinceHit = gameTimer - car.lastHitByPlayer;
+                    if (timeSinceHit > 180) { // 3 seconds grace period
+                        // Respawn bot instead of killing
+                        car.y = GROUND_Y - Math.floor(Math.random() * numStories) * STORY_HEIGHT - 50;
+                        car.x = 200 + Math.random() * (canvas.width - 400);
+                        car.vx = 0;
+                        car.vy = 0;
+                        car.rotation = 0;
+                        return;
+                    }
+                }
                 car.alive = false;
                 spawnParticles(car.x, canvas.height, 20, car.color);
             }
@@ -1408,6 +1434,13 @@
                             // Screen shake if player is involved
                             if (car1 === player || car2 === player) {
                                 addScreenShake(relSpeed * 0.8);
+                                // Track when player hits a bot (for challenge mode)
+                                if (car1 === player && car2.lastHitByPlayer !== undefined) {
+                                    car2.lastHitByPlayer = gameTimer;
+                                }
+                                if (car2 === player && car1.lastHitByPlayer !== undefined) {
+                                    car1.lastHitByPlayer = gameTimer;
+                                }
                             }
                         }
                     }
@@ -1574,6 +1607,18 @@
             ctx.fillText(`CARS LEFT: ${aliveCars.length}`, 30, 78);
             ctx.shadowBlur = 0;
 
+            // Challenge mode indicator
+            if (challengeMode) {
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
+                ctx.fillRect(10, 100, 200, 35);
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 14px Arial';
+                ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                ctx.shadowBlur = 4;
+                ctx.fillText('⚔️ CHALLENGE MODE ⚔️', 30, 122);
+                ctx.shadowBlur = 0;
+            }
+
             // Idle warning
             if (player.alive) {
                 const idleTime = gameTimer - lastKeyPressTime;
@@ -1582,15 +1627,16 @@
                 if (timeLeft <= 120 && timeLeft > 0) { // Warning in last 2 seconds
                     const seconds = Math.ceil(timeLeft / 60);
                     const warningAlpha = (Math.sin(gameTimer * 0.3) + 1) / 2; // Pulsing effect
+                    const warningY = challengeMode ? 145 : 100;
 
                     ctx.fillStyle = `rgba(255, 0, 0, ${0.5 + warningAlpha * 0.5})`;
-                    ctx.fillRect(10, 100, 200, 40);
+                    ctx.fillRect(10, warningY, 200, 40);
 
                     ctx.fillStyle = '#fff';
                     ctx.font = 'bold 18px Arial';
                     ctx.shadowColor = 'rgba(0,0,0,0.9)';
                     ctx.shadowBlur = 6;
-                    ctx.fillText(`⏱️ MOVE IN ${seconds}s!`, 35, 125);
+                    ctx.fillText(`⏱️ MOVE IN ${seconds}s!`, 35, warningY + 25);
                     ctx.shadowBlur = 0;
                 }
             }
@@ -1626,6 +1672,7 @@
             canvas.style.display = 'none';
             infoDiv.style.display = 'none';
             gameStarted = false;
+            challengeMode = false;
             keys['r'] = false;
             keys['R'] = false;
             gameTimer = 0;
@@ -1683,10 +1730,10 @@
 
             drawUI();
 
-            // Assign hunter bot after 2 seconds (120 frames)
+            // Assign hunter bot after 2 seconds (120 frames) - not in challenge mode
             if (!gameOver) {
                 gameTimer++;
-                if (gameTimer === 120 && hunterBot === null) {
+                if (!challengeMode && gameTimer === 120 && hunterBot === null) {
                     // Clear all hunter flags first
                     aiCars.forEach(car => car.isHunter = false);
 
@@ -1715,7 +1762,7 @@
             if (!gameOver && player.alive && gameTimer - lastKeyPressTime > IDLE_TIMEOUT) {
                 player.alive = false;
                 spawnParticles(player.x, player.y, 30, player.color);
-                statusText.textContent = '⏱️ ELIMINATED - 5 SECOND IDLE TIMEOUT!';
+                statusText.textContent = '⏱️ ELIMINATED - 4 SECOND IDLE TIMEOUT!';
                 statusText.style.color = '#ff4444';
             }
 
